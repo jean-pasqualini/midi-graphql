@@ -1,16 +1,35 @@
 const { ApolloServer, gql } = require('apollo-server');
 
+
 // This is a (sample) collection of books we'll be able to query
 // the GraphQL server for.  A more complete example might fetch
 // from an existing data source like a REST API or database.
 const books = [
     {
         title: 'Harry Potter and the Chamber of Secrets',
-        author: 'J.K. Rowling',
+        author: {
+            firstname: 'J.K',
+            lastname: 'Rolins',
+            gender: 'F',
+            age: 53,
+            date: '',
+            fullname: function () {
+                return this.firstname + ' ' + this.lastname;
+            }
+        },
     },
     {
         title: 'Jurassic Park',
-        author: 'Michael Crichton',
+        author: {
+            firstname: 'Michael',
+            lastname: 'Crichton',
+            age: 26,
+            gender: 'H',
+            birthday: '',
+            fullname: function () {
+                return this.firstname + ' ' + this.lastname;
+            }
+        },
     },
 ];
 
@@ -20,15 +39,25 @@ const typeDefs = gql`
   # Comments in GraphQL are defined with the hash (#) symbol.
 
   # This "Book" type can be used in other type declarations.
+  type Author {
+    firstname: String
+    lastname: String
+    fullname: String
+    gender: String
+    age: Int
+    birthday: String
+  }
+  
   type Book {
+    # test
     title: String
-    author: String
+    author: Author
   }
 
   # The "Query" type is the root of all GraphQL queries.
   # (A "Mutation" type will be covered later on.)
   type Query {
-    books: [Book]
+    books(gender: String): [Book]
   }
 `;
 
@@ -36,7 +65,12 @@ const typeDefs = gql`
 // schema.  We'll retrieve books from the "books" array above.
 const resolvers = {
     Query: {
-        books: () => books,
+        books(obj, args, context, info) {
+            if (typeof args.gender !== "undefined") {
+                return books.filter(book => book.author.gender === args.gender);
+            }
+            return books;
+        },
     },
 };
 
