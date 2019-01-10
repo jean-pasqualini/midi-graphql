@@ -8,10 +8,12 @@ const books = [
     {
         title: 'Harry Potter and the Chamber of Secrets',
         author: {
+            type: 'human',
             firstname: 'J.K',
             lastname: 'Rolins',
             gender: 'F',
             age: 53,
+            alive: function() { return this.age < 100; },
             date: '',
             fullname: function () {
                 return this.firstname + ' ' + this.lastname;
@@ -21,9 +23,26 @@ const books = [
     {
         title: 'Jurassic Park',
         author: {
+            type: 'human',
             firstname: 'Michael',
             lastname: 'Crichton',
             age: 26,
+            alive: function() { return this.age < 100; },
+            gender: 'H',
+            birthday: '',
+            fullname: function () {
+                return this.firstname + ' ' + this.lastname;
+            }
+        },
+    },
+    {
+        title: '0101010101',
+        author: {
+            type: 'robot',
+            firstname: 'Bender',
+            lastname: 'Futurama',
+            age: 26,
+            power: true,
             gender: 'H',
             birthday: '',
             fullname: function () {
@@ -38,14 +57,39 @@ const books = [
 const typeDefs = gql`
   # Comments in GraphQL are defined with the hash (#) symbol.
 
-  # This "Book" type can be used in other type declarations.
-  type Author {
+  union SearchResult = Human | Robot
+
+  type Human implements Author {
     firstname: String
     lastname: String
     fullname: String
     gender: String
     age: Int
     birthday: String
+    alive: Boolean
+    type: String
+  }
+  
+  type Robot implements Author {
+    firstname: String
+    lastname: String
+    fullname: String
+    gender: String
+    age: Int
+    birthday: String
+    power: Boolean
+    type: String
+  }
+
+  # This "Book" type can be used in other type declarations.
+  interface Author {
+    firstname: String
+    lastname: String
+    fullname: String
+    gender: String
+    age: Int
+    birthday: String
+    type: String
   }
   
   type Book {
@@ -58,6 +102,7 @@ const typeDefs = gql`
   # (A "Mutation" type will be covered later on.)
   type Query {
     books(gender: String): [Book]
+    search: [SearchResult]
   }
   
   type Mutation {
@@ -68,6 +113,16 @@ const typeDefs = gql`
 // Resolvers define the technique for fetching the types in the
 // schema.  We'll retrieve books from the "books" array above.
 const resolvers = {
+    Author: {
+        __resolveType(author, context, info) {
+            return author.type == 'robot' ? 'Robot' : 'Human';
+        }
+    },
+    SearchResult: {
+        __resolveType(author, context, info) {
+            return author.type == 'robot' ? 'Robot' : 'Human';
+        }
+    },
     Query: {
         books(obj, args, context, info) {
             if (typeof args.gender !== "undefined") {
@@ -75,6 +130,9 @@ const resolvers = {
             }
             return books;
         },
+        search(obj, args, context, info) {
+            return books.map(book => book.author);
+        }
     },
     Mutation: {
         addBook(obj, args, content, info) {
