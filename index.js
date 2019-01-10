@@ -59,6 +59,10 @@ const typeDefs = gql`
   type Query {
     books(gender: String): [Book]
   }
+  
+  type Mutation {
+      addBook(title: String, author: String): Book
+  }
 `;
 
 // Resolvers define the technique for fetching the types in the
@@ -72,6 +76,25 @@ const resolvers = {
             return books;
         },
     },
+    Mutation: {
+        addBook(obj, args, content, info) {
+            let book = {
+                title: args.title,
+                author: {
+                    firstname: 'aa',
+                    lastname: 'aa',
+                    fullname: args.author,
+                    gender: 'H',
+                    age: 12,
+                    birthday: '',
+                }
+            }
+
+            books.push(book);
+
+            return book;
+        }
+    }
 };
 
 // In the most basic sense, the ApolloServer can be started
