@@ -1,5 +1,6 @@
 const { ApolloServer, gql } = require('apollo-server');
-
+const { GraphQLScalarType } = require('graphql');
+const { Kind }  = require('graphql/language');
 
 // This is a (sample) collection of books we'll be able to query
 // the GraphQL server for.  A more complete example might fetch
@@ -13,6 +14,7 @@ const books = [
             lastname: 'Rolins',
             gender: 'F',
             age: 53,
+            birthday: new Date(),
             alive: function() { return this.age < 100; },
             date: '',
             fullname: function () {
@@ -29,7 +31,7 @@ const books = [
             age: 26,
             alive: function() { return this.age < 100; },
             gender: 'H',
-            birthday: '',
+            birthday: new Date(),
             fullname: function () {
                 return this.firstname + ' ' + this.lastname;
             }
@@ -44,7 +46,7 @@ const books = [
             age: 26,
             power: true,
             gender: 'H',
-            birthday: '',
+            birthday: new Date(),
             fullname: function () {
                 return this.firstname + ' ' + this.lastname;
             }
@@ -59,13 +61,15 @@ const typeDefs = gql`
 
   union SearchResult = Human | Robot
 
+  scalar Date
+
   type Human implements Author {
     firstname: String
     lastname: String
     fullname: String
     gender: String
     age: Int
-    birthday: String
+    birthday: Date
     alive: Boolean
     type: String
   }
@@ -76,7 +80,7 @@ const typeDefs = gql`
     fullname: String
     gender: String
     age: Int
-    birthday: String
+    birthday: Date
     power: Boolean
     type: String
   }
@@ -88,7 +92,7 @@ const typeDefs = gql`
     fullname: String
     gender: String
     age: Int
-    birthday: String
+    birthday: Date
     type: String
   }
   
@@ -103,6 +107,7 @@ const typeDefs = gql`
   type Query {
     books(gender: String): [Book]
     search: [SearchResult]
+    date(date: Date): Date
   }
   
   type Mutation {
@@ -132,7 +137,11 @@ const resolvers = {
         },
         search(obj, args, context, info) {
             return books.map(book => book.author);
-        }
+        },
+        date(obj, args, context, info) {
+            console.log(args.date);
+            return args.date;
+        },
     },
     Mutation: {
         addBook(obj, args, content, info) {
@@ -152,7 +161,26 @@ const resolvers = {
 
             return book;
         }
-    }
+    },
+    Date: new GraphQLScalarType({
+        name: 'Date',
+        description: 'Date custom scalar type',
+        parseValue(value) {
+            console.log('parseValue');
+            return new Date(value); // value from the client
+        },
+        serialize(value) {
+            console.log('serialize');
+            return value.getTime(); // value sent to the client
+        },
+        parseLiteral(ast) {
+            console.log('parseLiteral');
+            if (ast.kind === Kind.INT) {
+                return new Date(ast.value) // ast value is always in string format
+            }
+            return null;
+        },
+    }),
 };
 
 // In the most basic sense, the ApolloServer can be started
